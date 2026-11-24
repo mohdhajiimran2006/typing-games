@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Typing Arcade - 3D Speed Racer & Cyber Word Combat</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Three.js 3D Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Firebase Compat SDKs (App, Auth, Firestore) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <!-- Root Game Container (Strict 100dvh, Zero Page Scrolling) -->
+  <div id="game-root">
+
+    <!-- MASTER TOP BAR (TYPERUSH STYLE FROM REFERENCE IMAGE 2) -->
+    <header id="master-navbar" class="hidden">
+      <div class="nav-brand-group">
+        <span class="nav-logo-text">typerush<span class="logo-arrows">»</span></span>
+        <button id="btn-back-to-hub" class="nav-pill-btn hub-btn" title="Return to Game Selection Hub">🏠 <span class="label">ARCADE HUB</span></button>
+      </div>
+
+      <nav class="nav-menu-links">
+        <button id="nav-btn-play" class="nav-link active">PLAY</button>
+        <button id="nav-btn-stats" class="nav-link">STATS</button>
+        <button id="nav-btn-achievements" class="nav-link">ACHIEVEMENTS</button>
+        <button id="nav-btn-garage" class="nav-link">GARAGE</button>
+        <button id="nav-btn-levels" class="nav-link">LEVELS</button>
+        <button id="nav-btn-records" class="nav-link">TOP 500</button>
+        <button id="nav-btn-duel" class="nav-link highlight">1v1 DUEL</button>
+      </nav>
+
+      <div class="nav-user-group">
+        <!-- TypeRush style User Profile Chip (Image 2 style) -->
+        <div id="user-profile-chip" class="user-chip">
+          <span class="user-avatar-icon">👤</span>
+          <span id="user-chip-name" class="user-name-text">Cyber Racer</span>
+        </div>
+        <button id="btn-user-logout" class="nav-link logout-btn">Logout</button>
+        <button id="btn-mute" class="icon-btn" title="Toggle Sound">🔊</button>
+      </div>
+    </header>
+
+    <!-- ========================================================
+         SCREEN 1: DEDICATED LOGIN / CREATE ACCOUNT PAGE (SKETCH)
+         ======================================================== -->
+    <section id="screen-auth" class="portal-screen active">
+      <div class="auth-page-container">
+        <div class="auth-brand-header">
+          <div class="auth-logo-badge">⚡</div>
+          <h1 class="auth-portal-title">TYPING ARCADE</h1>
+          <p class="auth-portal-subtitle">Login to track your WPM, unlock supercars, and battle online</p>
+        </div>
+
+        <div class="auth-card-box">
+          <!-- Sketch: [ Login | Create Account ] Tabs -->
+          <div class="auth-tab-switch">
+            <button id="tab-auth-login" class="auth-tab active">Login</button>
+            <button id="tab-auth-register" class="auth-tab">Create Account</button>
+          </div>
+
+          <form id="auth-main-form" onsubmit="return false;">
+            <div id="auth-group-register-name" class="form-group" style="display:none;">
+              <label>Player Callsign / Name</label>
+              <input id="input-auth-name" class="form-input" type="text" maxlength="16" placeholder="e.g. ApexPredator" />
+            </div>
+
+            <div class="form-group">
+              <label>Email Address</label>
+              <input id="input-auth-email" class="form-input" type="email" required placeholder="player@arcade.com" />
+            </div>
+
+            <div class="form-group">
+              <label>Password</label>
+              <input id="input-auth-password" class="form-input" type="password" required minlength="6" placeholder="••••••••" />
+            </div>
+
+            <div id="auth-feedback-msg" class="auth-feedback-box"></div>
+
+            <button id="btn-auth-submit" class="auth-action-btn" type="submit">Sign In ➔</button>
+            
+            <div class="auth-divider"><span>OR</span></div>
+            <button id="btn-auth-guest" class="auth-guest-btn" type="button">🎮 Quick Play as Guest</button>
+          </form>
+        </div>
+
+        <div class="auth-footer-tagline">
+          Firebase Cloud Sync • 60 FPS 3D Engine • Real-time Multiplayer
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SCREEN 2: DEDICATED ENTER NAME PAGE (SKETCH)
+         ======================================================== -->
+    <section id="screen-name-setup" class="portal-screen hidden">
+      <div class="name-setup-container">
+        <div class="name-setup-card">
+          <div class="setup-icon-halo">🏎️</div>
+          <h2>Enter Your Callsign</h2>
+          <p>Choose your arcade racer identity to appear on global leaderboards and 1v1 duels:</p>
+
+          <div class="setup-input-wrapper">
+            <input id="input-setup-callsign" class="setup-input" type="text" maxlength="16" placeholder="Your Driver Name..." autofocus />
+            <button id="btn-random-callsign" class="random-dice-btn" title="Generate Random Callsign">🎲</button>
+          </div>
+
+          <button id="btn-confirm-name" class="setup-submit-btn">Confirm & Enter Arcade ➔</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SCREEN 3: GAME SELECTION DASHBOARD / HUB (SKETCH)
+         ======================================================== -->
+    <section id="screen-hub" class="portal-screen hidden">
+      <div class="hub-container">
+        
+        <div class="hub-hero-banner">
+          <h2>SELECT YOUR TYPING ARENA</h2>
+          <p>Compete in high-speed 3D supercar racing or defend against incoming cyber word attacks</p>
+        </div>
+
+        <div class="hub-game-cards-grid">
+          
+          <!-- Game Card 1: 3D Speed Racer -->
+          <div id="card-launch-car" class="game-select-card car-card-theme">
+            <div class="card-glow-edge"></div>
+            <div class="card-badge">3D HIGHWAY RACER</div>
+            <div class="card-preview-art car-art">
+              <span class="card-art-emoji">🏎️💨</span>
+            </div>
+            <div class="card-content">
+              <h3>Speed Racer 3D</h3>
+              <p>TypeRush styled 5-lane highway with procedural supercars, analog speedometer, and 100 progressive levels.</p>
+              
+              <div class="card-stats-row">
+                <div class="stat-pill">Best: <span id="hub-best-wpm">0 WPM</span></div>
+                <div class="stat-pill">Races: <span id="hub-total-races">0</span></div>
+              </div>
+
+              <button class="btn-card-launch car-launch-btn">PLAY SPEED RACER ➔</button>
+            </div>
+          </div>
+
+          <!-- Game Card 2: Cyber Word Combat (Image 1 Style) -->
+          <div id="card-launch-bubble" class="game-select-card bubble-card-theme">
+            <div class="card-glow-edge"></div>
+            <div class="card-badge aqua">CYBER DEFENSE SHOOTER</div>
+            <div class="card-preview-art bubble-art">
+              <span class="card-art-emoji">⚡🫧</span>
+            </div>
+            <div class="card-content">
+              <h3>Aqua Cyber Combat</h3>
+              <p>Image 1 style defense: floating letter-capsules (`[ t ][ o ][ u ][ c ][ h ]`), laser targeting, combat logs, and red perimeter line.</p>
+              
+              <div class="card-stats-row">
+                <div class="stat-pill">High Score: <span id="hub-best-bubble">0</span></div>
+                <div class="stat-pill">Accuracy: <span id="hub-bubble-acc">100%</span></div>
+              </div>
+
+              <button class="btn-card-launch bubble-launch-btn">ENGAGE CYBER COMBAT ➔</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         SCREEN 4: SPEED RACER 3D (TYPERUSH REFERENCE IMAGE 2)
+         ======================================================== -->
+    <section id="screen-car-game" class="portal-screen hidden">
+      <input id="hidden-input" class="hidden-key-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+
+      <!-- Top HUD (Image 2 style: 87 WPM left, 0:15.9 right) -->
+      <div id="car-top-bar">
+        <div class="hud-left-stats">
+          <span id="hud-wpm" class="wpm-display">0 WPM</span>
+          <span id="hud-level-badge" class="level-tag">LVL 1</span>
+        </div>
+
+        <div class="hud-center-title">
+          <span>HIGHWAY SPRINT CIRCUIT</span>
+        </div>
+
+        <div class="hud-right-stats">
+          <div class="hud-stat-pill">ACC <span id="hud-accuracy">100%</span></div>
+          <div id="hud-timer" class="digital-clock">0:00.0</div>
+          <button id="btn-reset" class="icon-btn" title="Restart Race (Tab)">🔄</button>
+        </div>
+      </div>
+
+      <!-- 3D Race Highway Viewport -->
+      <main id="race-canvas-container">
+        <div id="countdown-overlay" class="hidden">
+          <div id="countdown-text">3</div>
+        </div>
+      </main>
+
+      <!-- Bottom Cockpit Dock (Image 2: Analog speedometer + Monospace Text) -->
+      <footer id="bottom-dock">
+        <!-- Analog Speedometer -->
+        <div class="speedo-wrapper" title="Real-time Speedometer">
+          <svg class="speedo-svg" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="56" fill="none" stroke="#1e293b" stroke-width="8" stroke-dasharray="260" stroke-dashoffset="65" stroke-linecap="round" />
+            <circle cx="75" cy="75" r="56" fill="none" stroke="#00f0ff" stroke-width="4" stroke-dasharray="260" stroke-dashoffset="65" stroke-linecap="round" opacity="0.4" />
+            
+            <line x1="26" y1="103" x2="33" y2="99" stroke="#94a3b8" stroke-width="2" />
+            <line x1="26" y1="46" x2="33" y2="50" stroke="#94a3b8" stroke-width="2" />
+            <line x1="75" y1="19" x2="75" y2="27" stroke="#00f0ff" stroke-width="2.5" />
+            <line x1="124" y1="46" x2="117" y2="50" stroke="#f59e0b" stroke-width="2" />
+            <line x1="124" y1="103" x2="117" y2="99" stroke="#ef4444" stroke-width="2.5" />
+
+            <circle cx="75" cy="75" r="8" fill="#0f172a" stroke="#00f0ff" stroke-width="2" />
+
+            <g id="speedo-needle" class="speedo-needle">
+              <line x1="75" y1="75" x2="75" y2="24" stroke="#ff0055" stroke-width="3" stroke-linecap="round" />
+              <circle cx="75" cy="75" r="3" fill="#ffffff" />
+            </g>
+          </svg>
+
+          <div class="speedo-center-readout">
+            <span id="speedo-value">0</span>
+            <span class="speedo-unit">WPM</span>
+          </div>
+        </div>
+
+        <!-- Stationary Monospace Text Box (Image 2 style: Zero Scroll) -->
+        <div class="text-box-container">
+          <div id="nitro-glow-indicator"></div>
+          <div id="text-display-box">
+            Press any key to ignite engines...
+          </div>
+          <div class="dock-hint">
+            <span>Type each character accurately • Tab to restart</span>
+            <span><kbd>ESC</kbd> Close Modals</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ========================================================
+         SCREEN 5: AQUA CYBER COMBAT (REFERENCE IMAGE 1)
+         ======================================================== -->
+    <section id="screen-bubble-game" class="portal-screen hidden">
+      <div id="cyber-shooter-canvas-container"></div>
+    </section>
+
+  </div>
+
+  <!-- ========================================================
+       MODALS & OVERLAYS
+       ======================================================== -->
+
+  <!-- Modal: Achievements -->
+  <div id="modal-achievements" class="modal-overlay hidden">
+    <div class="modal-dialog large">
+      <div class="modal-header">
+        <h2>🎖️ Player Achievements</h2>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="achievements-grid" class="achievements-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Stats Profile -->
+  <div id="modal-stats" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2>📊 Career Statistics</h2>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="stats-profile-grid">
+          <div class="stat-card">
+            <span class="stat-card-label">Highest Speed</span>
+            <span id="stats-best-wpm" class="stat-card-val cyan">0 WPM</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-label">Total Races</span>
+            <span id="stats-total-races" class="stat-card-val">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-label">Cyber Defense Score</span>
+            <span id="stats-bubble-score" class="stat-card-val gold">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-label">Enemies Destroyed</span>
+            <span id="stats-bubble-kills" class="stat-card-val green">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: 3D Garage Showroom -->
+  <div id="modal-garage" class="modal-overlay hidden">
+    <div class="modal-dialog large">
+      <div class="modal-header">
+        <h2>🏎️ Cyber Garage & Supercars</h2>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="garage-layout">
+          <div id="garage-3d-canvas"></div>
+          <div id="garage-car-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: 100 Levels Progression -->
+  <div id="modal-levels" class="modal-overlay hidden">
+    <div class="modal-dialog large">
+      <div class="modal-header">
+        <h2>🏆 100 Career Levels</h2>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="levels-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Dual Leaderboard (Car Race & Cyber Shooter) -->
+  <div id="modal-leaderboard" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2>📊 Global Top 500 Records</h2>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="leaderboard-tabs">
+          <button id="lead-tab-car" class="lead-tab-btn active">🏎️ Car Race WPM</button>
+          <button id="lead-tab-bubble" class="lead-tab-btn">⚡ Cyber Combat Scores</button>
+        </div>
+        <div id="leaderboard-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: 1 vs 1 Multiplayer Duel -->
+  <div id="modal-multiplayer" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2>⚔️ 1 vs 1 Online Duel</h2>
+        <button class="modal-close-btn" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:#131a29; border:1px solid #1e293b; border-radius:8px; padding:16px; text-align:center;">
+          <h3 style="margin-bottom:6px; font-size:1.1rem; color:#00f0ff;">Host a Match</h3>
+          <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:12px;">Create a real-time room and invite a rival driver:</p>
+          <button id="mp-btn-create" class="btn-primary-action">Create Match Room</button>
+          <div id="mp-room-info" style="margin-top:10px; font-size:0.9rem;"></div>
+        </div>
+
+        <div style="background:#131a29; border:1px solid #1e293b; border-radius:8px; padding:16px; text-align:center;">
+          <h3 style="margin-bottom:6px; font-size:1.1rem; color:#10b981;">Join Rival's Match</h3>
+          <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:12px;">Enter the 5-letter match room code:</p>
+          <div style="display:flex; gap:8px; justify-content:center;">
+            <input id="mp-room-input" type="text" maxlength="6" placeholder="ROOM CODE" style="background:#090d16; border:1px solid rgba(0,240,255,0.4); color:#00f0ff; font-family:var(--font-mono); font-size:1.1rem; text-align:center; padding:6px 12px; border-radius:6px; width:150px; text-transform:uppercase;" />
+            <button id="mp-btn-join" class="btn-secondary-action">Join Match</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Car Race Victory -->
+  <div id="modal-victory" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <div class="modal-body victory-card">
+        <h1 class="victory-title">RACE FINISHED!</h1>
+        <div id="vic-stars">★★★</div>
+        <div class="vic-stats-grid">
+          <div class="vic-stat-box">
+            <div class="vic-stat-label">Speed</div>
+            <div id="vic-wpm" class="vic-stat-value">0 WPM</div>
+          </div>
+          <div class="vic-stat-box">
+            <div class="vic-stat-label">Accuracy</div>
+            <div id="vic-accuracy" class="vic-stat-value">100%</div>
+          </div>
+          <div class="vic-stat-box">
+            <div class="vic-stat-label">Time</div>
+            <div id="vic-time" class="vic-stat-value">0.0s</div>
+          </div>
+        </div>
+        <div class="vic-actions">
+          <button id="vic-btn-retry" class="btn-secondary-action">Race Again</button>
+          <button id="vic-btn-next" class="btn-primary-action">Next Level ➔</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cyber Word Combat Game Over -->
+  <div id="modal-bubble-gameover" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <div class="modal-body victory-card">
+        <h1 class="victory-title" style="color:#ef4444; text-shadow:0 0 20px rgba(239,68,68,0.6);">PERIMETER BREACHED!</h1>
+        <div style="font-size:2.8rem; margin-bottom:12px;">💥⚡</div>
+        <div class="vic-stats-grid">
+          <div class="vic-stat-box">
+            <div class="vic-stat-label">Score</div>
+            <div id="bg-final-score" class="vic-stat-value" style="color:#00f0ff;">0</div>
+          </div>
+          <div class="vic-stat-box">
+            <div class="vic-stat-label">Depth</div>
+            <div id="bg-final-wave" class="vic-stat-value">Wave 1</div>
+          </div>
+          <div class="vic-stat-box">
+            <div class="vic-stat-label">Kills</div>
+            <div id="bg-final-popped" class="vic-stat-value">0</div>
+          </div>
+        </div>
+        <div style="margin-bottom:18px; font-size:0.9rem; color:#94a3b8;">
+          Accuracy: <span id="bg-final-accuracy" style="color:#10b981; font-weight:800;">100%</span>
+        </div>
+        <div class="vic-actions">
+          <button id="btn-bubble-play-again" class="btn-primary-action" style="background:linear-gradient(135deg, #0284c7, #06b6d4);">Restart Defense ⚡</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts in Execution Order -->
+  <script src="texts.js"></script>
+  <script src="levels.js"></script>
+  <script src="cars.js"></script>
+  <script src="audio.js"></script>
+  <script src="firebase-sync.js"></script>
+  <script src="renderer3d.js"></script>
+  <script src="garage3d.js"></script>
+  <script src="bubble-game.js"></script>
+  <script src="game.js"></script>
+
+</body>
+</html>

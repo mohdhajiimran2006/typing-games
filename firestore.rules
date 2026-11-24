@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profile documents (Email, Display Name, High Scores)
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Drivers collection (Driver profiles & callsigns)
+    match /drivers/{driverId} {
+      allow read, write: if true;
+    }
+
+    // Car Racing Speed Records (Global Leaderboard)
+    match /speed_records/{recordId} {
+      allow read, write: if true;
+    }
+
+    // Aqua Bubble Shooter Records (Global Leaderboard)
+    match /bubble_records/{recordId} {
+      allow read, write: if true;
+    }
+
+    // Multiplayer 1v1 Rooms (Real-time live duel state)
+    match /rooms/{roomId} {
+      allow read, write: if true;
+    }
+
+    // Default rule for all other game documents
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
